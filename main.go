@@ -126,6 +126,7 @@ var tools = []Tool{
 	{"get_disk_usage", "Get disk space usage", schemaEmpty()},
 	{"get_top_processes", "Get top processes by resource usage", schema(P{"sort": "string", "count": "number"}, nil)},
 	{"get_disk_io", "Get disk I/O stats from sar (sysstat)", schema(P{"date": "string", "time_filter": "string"}, []string{"date"})},
+	{"get_sar", "Run sar command with any flag (-q load, -r memory, -u cpu, -n network, -d disk)", schema(P{"flag": "string", "date": "string", "time_filter": "string"}, []string{"flag", "date"})},
 	// PM2
 	{"get_pm2_status", "Get PM2 process list and status", schemaEmpty()},
 	{"get_pm2_logs", "Get recent PM2 logs", schema(P{"name": "string", "lines": "number"}, []string{"name"})},
@@ -278,6 +279,22 @@ func handleTool(name string, params json.RawMessage) any {
 		tf := getParam(params, "time_filter", "")
 		saFile := fmt.Sprintf("/var/log/sysstat/sa%s", date)
 		cmd := fmt.Sprintf("sar -d -f %s", saFile)
+		if tf != "" {
+			cmd += " | egrep '" + tf + "'"
+		}
+		return toolResult(shell(cmd))
+
+	case "get_sar":
+		flag := getParam(params, "flag", "-q")
+		date := getParam(params, "date", "")
+		tf := getParam(params, "time_filter", "")
+		// Only allow safe sar flags
+		allowed := map[string]bool{"-q": true, "-r": true, "-u": true, "-d": true, "-n DEV": true, "-b": true, "-w": true, "-S": true}
+		if !allowed[flag] {
+			return toolError("allowed flags: -q (load), -r (mem), -u (cpu), -d (disk), -n DEV (net), -b (io), -w (context switch), -S (swap)")
+		}
+		saFile := fmt.Sprintf("/var/log/sysstat/sa%s", date)
+		cmd := fmt.Sprintf("sar %s -f %s", flag, saFile)
 		if tf != "" {
 			cmd += " | egrep '" + tf + "'"
 		}
