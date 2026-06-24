@@ -58,7 +58,87 @@ func loadConfig() {
 	if data != nil {
 		json.Unmarshal(data, &config)
 	}
-	// Auto-detect if not configured
+	if config.AllowedPaths == nil {
+		config.AllowedPaths = []string{"/var/log/", "/home/", "/www/", "/opt/"}
+	}
+	if config.Path == "" {
+		config.Path = detectPath()
+	}
+	// Auto-detect log paths from nginx -T (most reliable)
+	autoDetectNginxPaths()
+}
+
+func autoDetectNginxPaths() {
+	// Get all access log paths from nginx config
+	out, _ := exec.Command("bash", "-c",
+		`sudo nginx -T 2>/dev/null || sudo /www/server/nginx/sbin/nginx -T 2>/dev/null`).Output()
+	nginxConf := string(out)
+
+	if nginxConf != "" {
+		// Find first valid access_log
+		if config.NginxAccessLog == "" {
+			lines := strings.Split(nginxConf, "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "access_log") && !strings.Contains(line, "off") {
+					parts := strings.Fields(line)
+					if len(parts) >= 2 {
+						p := strings.TrimSuffix(parts[1], ";")
+						if p != "off" && strings.HasPrefix(p, "/") {
+							config.NginxAccessLog = p
+							break
+						}
+					}
+				}
+			}
+		}
+		// Find first valid error_log
+		if config.NginxErrorLog == "" {
+			lines := strings.Split(nginxConf, "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "error_log") {
+					parts := strings.Fields(line)
+					if len(parts) >= 2 {
+						p := strings.TrimSuffix(parts[1], ";")
+						if strings.HasPrefix(p, "/") {
+							config.NginxErrorLog = p
+							break
+						}
+					}
+				}
+			}
+		}
+		// Detect log_base_path from access_log paths
+		if config.LogBasePath == "" {
+			lines := strings.Split(nginxConf, "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if strings.HasPrefix(line, "access_log") && !strings.Contains(line, "off") {
+					parts := strings.Fields(line)
+					if len(parts) >= 2 {
+						p := strings.TrimSuffix(parts[1], ";")
+						if strings.HasPrefix(p, "/home/") {
+							// Pattern: /home/xxx/logs/nginx/access.log → base = /home
+							config.LogBasePath = "/home"
+							break
+						} else if strings.HasPrefix(p, "/www/wwwlogs") {
+							config.LogBasePath = "/www/wwwlogs"
+							break
+						} else if strings.HasPrefix(p, "/var/log/nginx") {
+							config.LogBasePath = "/var/log/nginx"
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: detect from filesystem
+	if config.LogBasePath == "" {
+		config.LogBasePath = detectDir([]string{"/www/wwwlogs", "/home", "/var/log/nginx"})
+	}
 	if config.NginxAccessLog == "" {
 		config.NginxAccessLog = detectFile([]string{
 			"/www/wwwlogs/access.log",
@@ -71,18 +151,6 @@ func loadConfig() {
 			"/var/log/nginx/error.log",
 		})
 	}
-	if config.LogBasePath == "" {
-		config.LogBasePath = detectDir([]string{
-			"/www/wwwlogs",
-			"/home",
-		})
-	}
-	if config.AllowedPaths == nil {
-		config.AllowedPaths = []string{"/var/log/", "/home/", "/www/", "/opt/"}
-	}
-	if config.Path == "" {
-		config.Path = detectPath()
-	}
 }
 
 func detectFile(paths []string) string {
@@ -91,18 +159,10 @@ func detectFile(paths []string) string {
 			return p
 		}
 	}
-	out, _ := exec.Command("bash", "-c", `sudo nginx -T 2>/dev/null | awk '/access_log/ {print $2; exit}'`).Output()
-	if s := strings.TrimSpace(string(out)); s != "" && s != "off" {
-		return s
-	}
 	return paths[len(paths)-1]
 }
 
 func detectDir(paths []string) string {
-	out, _ := exec.Command("bash", "-c", `sudo nginx -T 2>/dev/null | awk '/access_log/ {print $2}' | head -1 | xargs dirname 2>/dev/null`).Output()
-	if s := strings.TrimSpace(string(out)); s != "" && s != "." {
-		return s
-	}
 	for _, p := range paths {
 		if info, err := os.Stat(p); err == nil && info.IsDir() {
 			return p
