@@ -53,18 +53,71 @@ var config Config
 func loadConfig() {
 	data, err := os.ReadFile("/opt/tt-mcp/config.json")
 	if err != nil {
-		data, err = os.ReadFile("config.json")
-		if err != nil {
-			config = Config{
-				NginxErrorLog:  "/var/log/nginx/error.log",
-				NginxAccessLog: "/var/log/nginx/access.log",
-				LogBasePath:    "/home",
-				AllowedPaths:   []string{"/var/log/", "/home/"},
-			}
-			return
+		data, _ = os.ReadFile("config.json")
+	}
+	if data != nil {
+		json.Unmarshal(data, &config)
+	}
+	// Auto-detect if not configured
+	if config.NginxAccessLog == "" {
+		config.NginxAccessLog = detectFile([]string{
+			"/www/wwwlogs/access.log",
+			"/var/log/nginx/access.log",
+		})
+	}
+	if config.NginxErrorLog == "" {
+		config.NginxErrorLog = detectFile([]string{
+			"/www/wwwlogs/nginx_error.log",
+			"/var/log/nginx/error.log",
+		})
+	}
+	if config.LogBasePath == "" {
+		config.LogBasePath = detectDir([]string{
+			"/www/wwwlogs",
+			"/home",
+		})
+	}
+	if config.AllowedPaths == nil {
+		config.AllowedPaths = []string{"/var/log/", "/home/", "/www/", "/opt/"}
+	}
+	if config.Path == "" {
+		config.Path = detectPath()
+	}
+}
+
+func detectFile(paths []string) string {
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			return p
 		}
 	}
-	json.Unmarshal(data, &config)
+	return paths[len(paths)-1]
+}
+
+func detectDir(paths []string) string {
+	for _, p := range paths {
+		if info, err := os.Stat(p); err == nil && info.IsDir() {
+			return p
+		}
+	}
+	return paths[len(paths)-1]
+}
+
+func detectPath() string {
+	base := "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+	// Auto-detect node/pm2 path
+	nodePaths := []string{
+		"/www/server/nodejs/v18.20.7/bin",
+		"/root/.nvm/versions/node/v18.20.7/bin",
+		"/usr/local/bin",
+	}
+	for _, p := range nodePaths {
+		if _, err := os.Stat(p + "/node"); err == nil {
+			base += ":" + p
+			break
+		}
+	}
+	return base
 }
 
 func envPath() []string {
@@ -127,6 +180,7 @@ var tools = []Tool{
 	{"get_top_processes", "Get top processes by resource usage", schema(P{"sort": "string", "count": "number"}, nil)},
 	{"get_disk_io", "Get disk I/O stats from sar (sysstat)", schema(P{"date": "string", "time_filter": "string"}, []string{"date"})},
 	{"get_sar", "Run sar command with any flag (-q load, -r memory, -u cpu, -n network, -d disk)", schema(P{"flag": "string", "date": "string", "time_filter": "string"}, []string{"flag", "date"})},
+	{"discover_logs", "List available log files on the server (auto-detect nginx, pm2, app logs)", schema(P{"path": "string"}, nil)},
 	// PM2
 	{"get_pm2_status", "Get PM2 process list and status", schemaEmpty()},
 	{"get_pm2_logs", "Get recent PM2 logs", schema(P{"name": "string", "lines": "number"}, []string{"name"})},
@@ -274,6 +328,27 @@ func handleTool(name string, params json.RawMessage) any {
 			ll = ll[:n+1]
 		}
 		return toolResult(strings.Join(ll, "\n"))
+	case "discover_logs":
+		p := getParam(params, "path", "")
+		var b strings.Builder
+		b.WriteString("=== NGINX CONFIG ===\n")
+		b.WriteString(shell(`nginx -T 2>/dev/null | grep -i "access_log\|error_log" | head -20`))
+		b.WriteString("\n=== LOG DIRECTORIES ===\n")
+		dirs := []string{"/www/wwwlogs", "/var/log/nginx", "/home/*/logs/nginx", "/var/log"}
+		if p != "" {
+			dirs = []string{p}
+		}
+		for _, d := range dirs {
+			out := shell(fmt.Sprintf(`ls -lhS %s/*.log %s/*access* %s/*error* 2>/dev/null | head -20`, d, d, d))
+			if out != "" && !strings.Contains(out, "No such file") {
+				b.WriteString(fmt.Sprintf("\n[%s]\n%s", d, out))
+			}
+		}
+		b.WriteString("\n=== CURRENT CONFIG ===\n")
+		b.WriteString(fmt.Sprintf("log_base_path: %s\nnginx_access_log: %s\nnginx_error_log: %s\nallowed_paths: %v\n",
+			config.LogBasePath, config.NginxAccessLog, config.NginxErrorLog, config.AllowedPaths))
+		return toolResult(b.String())
+
 	case "get_disk_io":
 		date := getParam(params, "date", "")
 		tf := getParam(params, "time_filter", "")
