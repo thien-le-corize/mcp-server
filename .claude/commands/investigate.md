@@ -26,6 +26,18 @@ Từ "$ARGUMENTS.query", xác định:
 - Chạy TẤT CẢ các phase tuần tự, không dừng giữa chừng.
 - Nếu tool lỗi → bỏ qua, chuyển phase tiếp.
 
+## QUY TẮC ĐIỀU TRA THỜI GIAN
+
+- Nếu phát hiện server bị **reboot/restart/shutdown** trong hoặc sau khoảng thời gian sự cố:
+  → ĐÓ KHÔNG PHẢI ROOT CAUSE. Đó là HẬU QUẢ.
+  → Phải điều tra **TRƯỚC thời điểm restart** (mở rộng window thêm 10-30 phút trước)
+  → Tìm: traffic spike, OOM, disk full, CPU saturation ĐÃ XẢY RA TRƯỚC KHI restart
+  → Ví dụ: user báo down 15:40, server restart 15:59 → điều tra 15:30-15:59
+
+- Khoảng thời gian điều tra = thời gian user báo ĐẾN TRƯỚC thời điểm restart
+- Luôn check `sar` và `access log` trong khoảng **trước restart**, không phải sau
+- Server restart có thể do: OOM killer, admin restart thủ công, hoặc watchdog tự restart khi service chết
+
 ---
 
 ## Phase 1 - Environment Discovery
