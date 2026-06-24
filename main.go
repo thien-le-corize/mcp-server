@@ -254,7 +254,7 @@ var tools = []Tool{
 	{"get_pm2_logs", "Get recent PM2 logs", schema(P{"name": "string", "lines": "number"}, []string{"name"})},
 	// Docker
 	{"get_docker_ps", "List Docker containers", schemaEmpty()},
-	{"get_docker_logs", "Get Docker container logs", schema(P{"container": "string", "lines": "number"}, []string{"container"})},
+	{"get_docker_logs", "Get Docker container logs (supports time range)", schema(P{"container": "string", "lines": "number", "since": "string", "until": "string"}, []string{"container"})},
 	// Nginx basic
 	{"get_nginx_errors", "Get recent Nginx error log", schema(P{"lines": "number"}, nil)},
 	{"get_nginx_access", "Get recent Nginx access log", schema(P{"lines": "number"}, nil)},
@@ -268,6 +268,7 @@ var tools = []Tool{
 	{"grep_requests", "Grep nginx access logs with custom pattern in a time range", schema(P{"pattern": "string", "date": "string", "start_hour": "string", "start_min": "string", "end_hour": "string", "end_min": "string", "log_suffix": "string"}, []string{"pattern"})},
 	// PM2 advanced
 	{"get_pm2_error_logs", "Get PM2 error logs for a process", schema(P{"name": "string", "lines": "number"}, []string{"name"})},
+	{"get_pm2_report", "Get full PM2 diagnostic report (versions, env, running apps)", schemaEmpty()},
 	// OOM investigation
 	{"investigate_oom", "Find OOM killer events: when, which process was killed, memory state", schema(P{"since": "string", "lines": "number"}, nil)},
 	{"get_pm2_restarts", "Show PM2 processes with restart counts and uptime to detect OOM crashes", schemaEmpty()},
@@ -489,7 +490,15 @@ func handleTool(name string, params json.RawMessage) any {
 		if c == "" {
 			return toolError("container is required")
 		}
-		return toolResult(run("docker", "logs", "--tail", lines, c))
+		args := []string{"logs", "--tail", lines}
+		if since := getParam(params, "since", ""); since != "" {
+			args = append(args, "--since", since)
+		}
+		if until := getParam(params, "until", ""); until != "" {
+			args = append(args, "--until", until)
+		}
+		args = append(args, c)
+		return toolResult(run("docker", args...))
 
 	// === Nginx basic ===
 	case "get_nginx_errors":
@@ -625,9 +634,11 @@ func handleTool(name string, params json.RawMessage) any {
 		if n == "" {
 			return toolError("name is required")
 		}
-		// PM2 error logs are at ~/.pm2/logs/<name>-error.log
 		cmd := fmt.Sprintf(`tail -n %s ~/.pm2/logs/%s-error.log 2>/dev/null || pm2 logs %s --err --nostream --lines %s`, lines, n, n, lines)
 		return toolResult(shell(cmd))
+
+	case "get_pm2_report":
+		return toolResult(shell("pm2 report 2>/dev/null || pm2 list"))
 
 	// === OOM Investigation ===
 	case "investigate_oom":
