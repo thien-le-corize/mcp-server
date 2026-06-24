@@ -38,6 +38,22 @@ usermod -aG systemd-journal $MCP_USER 2>/dev/null || true
 usermod -aG docker $MCP_USER 2>/dev/null || true
 chown -R $MCP_USER:$MCP_USER $MCP_DIR
 
+# Grant read access to common log directories
+for dir in /www/wwwlogs /var/log/nginx /home/*/logs; do
+  [ -d "$dir" ] && setfacl -R -m u:$MCP_USER:rx "$dir" 2>/dev/null || chmod -R o+r "$dir" 2>/dev/null || true
+done
+
+# Allow mcp-reader to run nginx -T and pm2 via sudo (read-only commands)
+cat > /etc/sudoers.d/tt-mcp << SUDOEOF
+$MCP_USER ALL=(root) NOPASSWD: /usr/sbin/nginx -T
+$MCP_USER ALL=(root) NOPASSWD: /www/server/nginx/sbin/nginx -T
+$MCP_USER ALL=(root) NOPASSWD: /usr/bin/pm2 *
+$MCP_USER ALL=(root) NOPASSWD: /www/server/nodejs/*/bin/pm2 *
+$MCP_USER ALL=(root) NOPASSWD: /usr/bin/journalctl *
+$MCP_USER ALL=(root) NOPASSWD: /usr/bin/dmesg *
+SUDOEOF
+chmod 440 /etc/sudoers.d/tt-mcp
+
 echo "=== [5/5] SSH force-command key ==="
 mkdir -p $MCP_DIR/.ssh
 if [ ! -f $MCP_DIR/.ssh/tt-mcp-key ]; then
