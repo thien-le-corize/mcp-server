@@ -46,20 +46,47 @@ Output: Environment Map (ghi nhớ log paths cho các phase sau)
 Mục tiêu: Server có bị thiếu tài nguyên không?
 
 Gọi:
-- `get_memory_usage` → RAM, Swap
+- `get_memory_usage` → RAM, Swap hiện tại
 - `get_disk_usage` → Disk
 - `get_top_processes(sort="mem", count=10)` → Top memory consumers
-- `get_sar(flag="-q", date="DD", time_filter="HH:M")` → Load average lúc sự cố
+- `get_sar(flag="-q", date="DD", time_filter="HH:M")` → Load average + blocked processes lúc sự cố
 - `get_sar(flag="-r", date="DD", time_filter="HH:M")` → Memory history lúc sự cố
+- `get_sar(flag="-d", date="DD", time_filter="HH:M")` → Disk I/O lúc sự cố
+- `get_sar(flag="-u", date="DD", time_filter="HH:M")` → CPU usage lúc sự cố
 - `investigate_oom` → OOM events
 
+Cách đọc kết quả `sar -q`:
+```
+TIME        runq-sz  plist-sz  ldavg-1  ldavg-5  ldavg-15  blocked
+03:40 PM    1        479       0.87     0.45     0.36      0        ← bình thường
+03:50 PM    1        589       25.65    6.94     2.64      42       ← BẤT THƯỜNG
+```
+- `ldavg-1 > số CPU cores` = CPU overloaded
+- `blocked > 0` = processes bị chặn chờ I/O
+- `plist-sz tăng đột biến` = fork bomb hoặc traffic spike
+- `ldavg-1=25 + blocked=42` = server gần như đứng hoàn toàn
+
+Cách đọc kết quả `sar -r`:
+- `%memused > 90%` = memory pressure
+- `kbswpused tăng` = swapping (rất chậm)
+
+Cách đọc kết quả `sar -d`:
+- `%util > 80%` = disk saturated
+- `await > 50ms` = disk quá chậm
+
 Evidence thu thập:
+- Load Average (ldavg-1, ldavg-5)
+- Blocked Processes count
 - Memory Usage (%)
 - Swap Usage
-- Load Average
+- Disk I/O utilization
 - OOM Event (có/không, process nào bị kill)
 
-Nếu OOM detected → Memory Pressure = HIGH
+Đánh giá:
+- ldavg-1 > 10 → CPU Saturation = HIGH
+- blocked > 10 → I/O Pressure = HIGH  
+- OOM detected → Memory Pressure = HIGH
+- %memused > 95% → Memory Pressure = HIGH
 
 ---
 
