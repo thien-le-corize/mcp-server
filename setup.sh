@@ -26,6 +26,8 @@ echo "Built: $(ls -lh tt-mcp | awk '{print $5}')"
 
 echo "=== [3/5] Install ==="
 mkdir -p $MCP_DIR
+killall tt-mcp 2>/dev/null || true
+sleep 1
 cp tt-mcp $MCP_DIR/
 [ -f $MCP_DIR/config.json ] || cp config.json $MCP_DIR/
 chmod +x $MCP_DIR/tt-mcp
