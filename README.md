@@ -2,6 +2,86 @@
 
 Read-only MCP server for incident investigation. Pure Go, zero dependencies, ~5MB RAM.
 
+## How It Works
+
+```
+┌──────────────────────────────────────────────────────┐
+│  Máy Mac (local)                                      │
+│                                                       │
+│  1. Bạn gõ: "kiểm tra memory trên corize"            │
+│                    │                                  │
+│                    ▼                                  │
+│  2. Claude Code (AI) đọc ~/.claude.json               │
+│     → thấy MCP server "corize" config:               │
+│        command: ssh                                   │
+│        args: [-T, -i, ~/.ssh/tt-mcp-key, ...]        │
+│     → spawn SSH process                              │
+│                    │                                  │
+│  3. SSH gửi JSON qua stdin:                           │
+│     {"method":"tools/call","params":{"name":          │
+│      "get_memory_usage"}}                            │
+│                    │                                  │
+└────────────────────┼─────────────────────────────────┘
+                     │ SSH tunnel (encrypted)
+                     ▼
+┌──────────────────────────────────────────────────────┐
+│  Server (46.137.253.133)                              │
+│                                                       │
+│  4. sshd nhận connection từ key tt-mcp-key            │
+│     → authorized_keys có force-command                │
+│     → BẮT BUỘC chạy /opt/tt-mcp/tt-mcp              │
+│     → KHÔNG THỂ chạy lệnh khác                      │
+│                                                       │
+│  5. Binary tt-mcp đọc JSON từ stdin                   │
+│     → parse: tool = "get_memory_usage"               │
+│     → chạy: free -h                                  │
+│     → trả JSON qua stdout                           │
+│                                                       │
+└────────────────────┼─────────────────────────────────┘
+                     │ stdout (JSON response)
+                     ▼
+┌──────────────────────────────────────────────────────┐
+│  6. Claude Code nhận kết quả                          │
+│     → phân tích: "RAM 3.8GB, dùng 932MB"            │
+│     → trả lời bạn bằng tiếng Việt                   │
+└──────────────────────────────────────────────────────┘
+```
+
+### Tại sao Claude có quyền SSH?
+
+Claude Code đọc file `~/.claude.json` trên máy Mac của bạn. File này chứa:
+
+```json
+{
+  "mcpServers": {
+    "corize": {
+      "command": "ssh",
+      "args": ["-T", "-i", "~/.ssh/tt-mcp-key", "mcp-reader@46.137.253.133"]
+    }
+  }
+}
+```
+
+Khi cần gọi tool MCP, Claude Code **spawn process SSH** trên máy bạn (giống bạn gõ `ssh ...` trong terminal). SSH key nằm trên máy bạn (`~/.ssh/tt-mcp-key`).
+
+### Flow khi dùng `/investigate`
+
+```
+/investigate web corize bị down 15:40-15:50 ngày 23/6
+
+Claude đọc skill investigate.md → biết quy trình 9 phase
+│
+├─ Phase 1: gọi discover_logs → biết log ở /home/*/logs/nginx/
+├─ Phase 2: gọi get_sar → load=25.65, blocked=42
+├─ Phase 3: gọi get_top_processes → mysql 880MB
+├─ Phase 4: gọi top_ips_in_timerange → IP 185.177.72.51 = 504 req
+├─ Phase 5: gọi count_requests_per_minute → spike lúc 15:48
+├─ Phase 6: gọi analyze_ip → bot, UA bất thường
+├─ Phase 7: đánh giá Spam Score
+├─ Phase 8: gọi get_journal(grep="oom|killed") → memory pressure
+└─ Phase 9: correlation → viết report + lưu file .md
+```
+
 ## Architecture
 
 ```
