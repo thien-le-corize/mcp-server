@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
 cd "$(dirname "$0")"
+export PATH=$PATH:/usr/local/go/bin
 echo "Building..."
 CGO_ENABLED=0 go build -ldflags="-s -w" -o tt-mcp .
 echo "Deploying..."
