@@ -42,12 +42,20 @@ chown -R $MCP_USER:$MCP_USER $MCP_DIR
 
 # Grant read access to common log directories
 command -v setfacl &>/dev/null || (apt install -y acl 2>/dev/null || yum install -y acl 2>/dev/null || true)
-# Allow mcp-reader to traverse /home/*/
-for dir in /home/*/; do
+
+# Auto-detect nginx log paths
+NGINX_BIN=$(which nginx 2>/dev/null || echo "/www/server/nginx/sbin/nginx")
+LOG_DIRS=$($NGINX_BIN -T 2>/dev/null | awk '/access_log|error_log/ {print $2}' | sed 's/;$//' | grep "^/" | xargs -I{} dirname {} | sort -u)
+# Add common paths
+LOG_DIRS="$LOG_DIRS /www/wwwlogs /var/log/nginx /home/*/logs /usr/local/nginx/logs"
+
+# Allow mcp-reader to traverse parent dirs
+for dir in /home/*/ /www/*/; do
   [ -d "$dir" ] && setfacl -m u:$MCP_USER:x "$dir" 2>/dev/null || chmod o+x "$dir" 2>/dev/null || true
 done
+
 # Allow mcp-reader to read logs
-for dir in /www/wwwlogs /var/log/nginx /home/*/logs /usr/local/nginx/logs; do
+for dir in $LOG_DIRS; do
   if [ -d "$dir" ]; then
     setfacl -R -m u:$MCP_USER:rx "$dir" 2>/dev/null || chmod -R o+r "$dir" 2>/dev/null || true
     setfacl -R -d -m u:$MCP_USER:rx "$dir" 2>/dev/null || true
