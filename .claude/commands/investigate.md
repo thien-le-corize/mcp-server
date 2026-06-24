@@ -27,6 +27,12 @@ Quy tắc xác định thời gian:
 - Nếu user nói "hôm qua" → tính ngày hôm qua
 - Luôn điều tra ÍT NHẤT 20-30 phút TRƯỚC thời điểm down để tìm nguyên nhân tích lũy
 
+QUAN TRỌNG VỀ NGÀY:
+- User nói "ngày 23/6" hoặc "ngày 23/6/2026" → date grep = "23/Jun/2026", log_suffix = "2026-06-23"
+- User nói "ngày 24/6" → date grep = "24/Jun/2026", log_suffix = "2026-06-24"
+- KHÔNG TỰ THAY ĐỔI NGÀY. Nếu user nói 23/6 thì phải dùng 23/6, KHÔNG ĐƯỢC đổi sang ngày hiện tại.
+- Tháng tiếng Anh: 1=Jan, 2=Feb, 3=Mar, 4=Apr, 5=May, 6=Jun, 7=Jul, 8=Aug, 9=Sep, 10=Oct, 11=Nov, 12=Dec
+
 ## QUAN TRỌNG
 
 - CHỈ dùng MCP tool. KHÔNG đọc file local. KHÔNG hỏi user.
