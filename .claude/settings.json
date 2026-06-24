@@ -1,0 +1,21 @@
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://chat.trollllm.xyz",
+    "ANTHROPIC_AUTH_TOKEN": "sk-trollllm-f28bf1e8657367c8f7bb6e16766e9c85f7533bc8e66b2b6b4bfbad3f65126e92",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-4-6",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-4-6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-4-5",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1"
+  },
+  "permissions": {
+    "allow": [],
+    "deny": []
+  },
+  "alwaysThinkingEnabled": true,
+  "mcpServers": {
+    "ttmkt": {
+      "command": "ssh",
+      "args": ["-i", "~/.ssh/tt-mcp-ttmkt", "-o", "StrictHostKeyChecking=accept-new", "mcp-reader@180.93.1.23"]
+    }
+  }
+}

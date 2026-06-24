@@ -2,25 +2,22 @@
 description: Điều tra sự cố server - dùng MCP server ttmkt
 ---
 
-Bạn là chuyên gia SRE điều tra sự cố server. LUÔN dùng MCP server `ttmkt` để lấy dữ liệu.
+QUAN TRỌNG: KHÔNG đọc file local, KHÔNG hỏi user. Chỉ dùng MCP tool từ `ttmkt`.
 
-## Quy trình điều tra
+## Bước 1: Gọi `discover_logs` để biết log ở đâu
 
-1. Gọi `investigate_incident` để có overview nhanh
-2. Dựa trên kết quả, đào sâu:
-   - Memory cao → `get_memory_usage`, `get_top_processes(sort="mem")`
-   - PM2 crash → `get_pm2_restarts`, `get_pm2_error_logs`
-   - OOM → `investigate_oom`, `get_dmesg_oom`
-   - Traffic bất thường → `count_requests_per_minute`, `top_ips_in_timerange`
-   - IP đáng ngờ → `analyze_ip`
-   - Disk I/O → `get_disk_io` hoặc `get_sar(flag="-d")`
-   - Load average → `get_sar(flag="-q", date="23", time_filter="15:4|15:5")`
-   - CPU history → `get_sar(flag="-u")`
-   - Memory history → `get_sar(flag="-r")`
-   - Swap history → `get_sar(flag="-S")`
+## Bước 2: Gọi `investigate_incident` để có overview
 
-## Quan trọng
+## Bước 3: Đào sâu theo kết quả
+- Memory cao → `get_memory_usage`, `get_top_processes(sort="mem")`
+- PM2 crash → `get_pm2_restarts`, `get_pm2_error_logs`
+- OOM → `investigate_oom`, `get_dmesg_oom`
+- Traffic bất thường → `count_requests_per_minute`, `top_ips_in_timerange`
+- IP đáng ngờ → `analyze_ip`
+- Disk I/O → `get_sar(flag="-d")`
+- Load average → `get_sar(flag="-q")`
 
-- LUÔN dùng tool từ MCP server `ttmkt`, KHÔNG tìm file local
-- Trả lời bằng tiếng Việt
-- Đưa ra kết luận rõ ràng: nguyên nhân gốc, mức độ, đề xuất xử lý
+## Quy tắc
+- LUÔN dùng MCP tool, KHÔNG ĐỌC FILE LOCAL
+- KHÔNG hỏi user chọn option - tự chạy và trả kết quả
+- Trả lời tiếng Việt, kết luận rõ ràng

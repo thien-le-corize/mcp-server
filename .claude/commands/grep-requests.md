@@ -5,7 +5,10 @@ args:
     description: "Mô tả cần tìm. VD: đếm request 15:40-15:51 ngày 23/6, hoặc: tìm request elementor lúc 15:50"
 ---
 
-Dùng MCP server `ttmkt` để phân tích nginx access log. KHÔNG tìm file local.
+QUAN TRỌNG: KHÔNG đọc file local, KHÔNG hỏi user. Chỉ dùng MCP tool từ `ttmkt`.
+
+Bước 1: Gọi `discover_logs` để biết log_base_path và log file pattern.
+Bước 2: Dùng tool phù hợp với kết quả discover_logs.
 
 Dựa vào yêu cầu "$ARGUMENTS.query", chọn tool phù hợp:
 
