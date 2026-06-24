@@ -339,10 +339,13 @@ func handleTool(name string, params json.RawMessage) any {
 	case "discover_logs":
 		p := getParam(params, "path", "")
 		var b strings.Builder
-		b.WriteString("=== NGINX LOG PATHS ===\n")
-		b.WriteString(shell(`sudo nginx -T 2>/dev/null | awk '/server_name/ {domain=$2} /access_log/ {print domain " => ACCESS: " $2} /error_log/ {print domain " => ERROR : " $2}'`))
+		b.WriteString("=== NGINX LOG PATHS (from nginx config) ===\n")
+		// Try multiple nginx binary locations
+		b.WriteString(shell(`(sudo nginx -T 2>/dev/null || sudo /www/server/nginx/sbin/nginx -T 2>/dev/null || sudo /usr/local/nginx/sbin/nginx -T 2>/dev/null) | awk '/server_name/ {domain=$2} /access_log/ {print domain " => ACCESS: " $2} /error_log/ {print domain " => ERROR : " $2}'`))
+		b.WriteString("\n=== FIND LOG FILES ===\n")
+		b.WriteString(shell(`find /www/wwwlogs /var/log/nginx /home/*/logs /usr/local/nginx/logs 2>/dev/null -name "*.log" -o -name "*access*" -o -name "*error*" 2>/dev/null | head -50`))
 		b.WriteString("\n=== LOG DIRECTORIES ===\n")
-		dirs := []string{"/www/wwwlogs", "/var/log/nginx", "/home/*/logs/nginx", "/var/log"}
+		dirs := []string{"/www/wwwlogs", "/var/log/nginx", "/home/*/logs/nginx", "/usr/local/nginx/logs", "/var/log"}
 		if p != "" {
 			dirs = []string{p}
 		}
@@ -352,6 +355,8 @@ func handleTool(name string, params json.RawMessage) any {
 				b.WriteString(fmt.Sprintf("\n[%s]\n%s", d, out))
 			}
 		}
+		b.WriteString("\n=== NGINX PROCESS ===\n")
+		b.WriteString(shell(`ps aux | grep nginx | grep -v grep`))
 		b.WriteString("\n=== CURRENT CONFIG ===\n")
 		b.WriteString(fmt.Sprintf("log_base_path: %s\nnginx_access_log: %s\nnginx_error_log: %s\nallowed_paths: %v\n",
 			config.LogBasePath, config.NginxAccessLog, config.NginxErrorLog, config.AllowedPaths))

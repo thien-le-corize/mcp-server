@@ -41,7 +41,7 @@ usermod -aG docker $MCP_USER 2>/dev/null || true
 chown -R $MCP_USER:$MCP_USER $MCP_DIR
 
 # Grant read access to common log directories
-for dir in /www/wwwlogs /var/log/nginx /home/*/logs; do
+for dir in /www/wwwlogs /var/log/nginx /home/*/logs /usr/local/nginx/logs; do
   [ -d "$dir" ] && setfacl -R -m u:$MCP_USER:rx "$dir" 2>/dev/null || chmod -R o+r "$dir" 2>/dev/null || true
 done
 
@@ -49,10 +49,12 @@ done
 cat > /etc/sudoers.d/tt-mcp << SUDOEOF
 $MCP_USER ALL=(root) NOPASSWD: /usr/sbin/nginx -T
 $MCP_USER ALL=(root) NOPASSWD: /www/server/nginx/sbin/nginx -T
+$MCP_USER ALL=(root) NOPASSWD: /usr/local/nginx/sbin/nginx -T
 $MCP_USER ALL=(root) NOPASSWD: /usr/bin/pm2 *
 $MCP_USER ALL=(root) NOPASSWD: /www/server/nodejs/*/bin/pm2 *
 $MCP_USER ALL=(root) NOPASSWD: /usr/bin/journalctl *
 $MCP_USER ALL=(root) NOPASSWD: /usr/bin/dmesg *
+$MCP_USER ALL=(root) NOPASSWD: /usr/bin/find *
 SUDOEOF
 chmod 440 /etc/sudoers.d/tt-mcp
 
