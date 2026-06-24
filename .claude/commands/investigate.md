@@ -92,7 +92,7 @@ Evidence thu thập:
 
 ## Phase 3 - Process Investigation
 
-Mục tiêu: Service nào chiếm tài nguyên?
+Mục tiêu: Service nào chiếm tài nguyên? Service nào bị crash/restart?
 
 Gọi:
 - `get_top_processes(sort="cpu", count=15)`
@@ -100,10 +100,24 @@ Gọi:
 - `get_pm2_restarts` → process restart nhiều = nghi crash
 - `get_pm2_error_logs(name="<top process>")` → nếu PM2 restart nhiều
 
+Nếu thấy php-fpm trong process list:
+- Detect version từ process name (php-fpm8.0, php-fpm8.1, etc.)
+- `get_journal(unit="php8.0-fpm", since="<start>", until="<end>")` → PHP crash/restart
+- `get_app_log(path="/var/log/php8.0-fpm.log", lines=100)` → PHP error log
+
+Nếu thấy mysql/mariadb:
+- `get_journal(unit="mysql", since="<start>", until="<end>")`
+- `get_journal(unit="mariadb", since="<start>", until="<end>")`
+
+Nếu thấy redis:
+- `get_journal(unit="redis", since="<start>", until="<end>")`
+
 Evidence:
 - Top CPU Process (name, PID, %)
 - Top Memory Process (name, PID, %)
 - PM2 Restart Count
+- PHP-FPM status (running/crashed/restarted)
+- Database status
 
 ---
 
