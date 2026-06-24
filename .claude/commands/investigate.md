@@ -20,6 +20,13 @@ Từ "$ARGUMENTS.query", xác định:
 - Ngày sự cố (format: DD/Mon/YYYY cho grep, YYYY-MM-DD cho log_suffix)
 - Khoảng thời gian (start_hour, start_min, end_hour, end_min)
 
+Quy tắc xác định thời gian:
+- Nếu user cho đầy đủ "15:40-15:50 ngày 23/6" → dùng trực tiếp
+- Nếu user chỉ nói "down lúc 15:50" → tự mở rộng: kiểm tra 15:20 đến 15:50 (30 phút trước)
+- Nếu user chỉ nói "down lúc 15:50" mà KHÔNG nói ngày → HỎI LẠI ngày nào
+- Nếu user nói "hôm qua" → tính ngày hôm qua
+- Luôn điều tra ÍT NHẤT 20-30 phút TRƯỚC thời điểm down để tìm nguyên nhân tích lũy
+
 ## QUAN TRỌNG
 
 - CHỈ dùng MCP tool. KHÔNG đọc file local. KHÔNG hỏi user.
