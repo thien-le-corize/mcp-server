@@ -41,10 +41,15 @@ usermod -aG docker $MCP_USER 2>/dev/null || true
 chown -R $MCP_USER:$MCP_USER $MCP_DIR
 
 # Grant read access to common log directories
+command -v setfacl &>/dev/null || (apt install -y acl 2>/dev/null || yum install -y acl 2>/dev/null || true)
+# Allow mcp-reader to traverse /home/*/
+for dir in /home/*/; do
+  [ -d "$dir" ] && setfacl -m u:$MCP_USER:x "$dir" 2>/dev/null || chmod o+x "$dir" 2>/dev/null || true
+done
+# Allow mcp-reader to read logs
 for dir in /www/wwwlogs /var/log/nginx /home/*/logs /usr/local/nginx/logs; do
   if [ -d "$dir" ]; then
     setfacl -R -m u:$MCP_USER:rx "$dir" 2>/dev/null || chmod -R o+r "$dir" 2>/dev/null || true
-    # Ensure future log files are also readable
     setfacl -R -d -m u:$MCP_USER:rx "$dir" 2>/dev/null || true
   fi
 done
