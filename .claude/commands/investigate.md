@@ -252,6 +252,8 @@ Phân loại vào 1 trong các nhóm:
 
 ## Output Format
 
+Sau khi điều tra xong, LƯU report vào file `reports/incident-YYYY-MM-DD-HHMM.md` trong thư mục hiện tại.
+
 Trả kết quả dạng - PHẢI liệt kê TẤT CẢ 9 phase dù không có data:
 
 ```
