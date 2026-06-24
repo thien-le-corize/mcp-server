@@ -252,7 +252,7 @@ Phân loại vào 1 trong các nhóm:
 
 ## Output Format
 
-Trả kết quả dạng:
+Trả kết quả dạng - PHẢI liệt kê TẤT CẢ 9 phase dù không có data:
 
 ```
 ══════════════════════════════════════
@@ -264,6 +264,18 @@ Root Cause: [phân loại]
 Confidence: [0-100]%
 Affected Service: [website/service name]
 
+═══ PHASE RESULTS ═══
+
+Phase 1 - Environment: [kết quả]
+Phase 2 - System Health: [kết quả hoặc "BLOCKED: lý do"]
+Phase 3 - Process: [kết quả]
+Phase 4 - Traffic: [kết quả hoặc "BLOCKED: no access log permission"]
+Phase 5 - Timeline: [kết quả hoặc "BLOCKED"]
+Phase 6 - Top IPs: [kết quả hoặc "BLOCKED"]
+Phase 7 - IP Analysis: [kết quả hoặc "BLOCKED"]
+Phase 8 - Errors: [kết quả]
+Phase 9 - Correlation: [chuỗi nguyên nhân]
+
 ═══ EVIDENCE CHAIN ═══
 1. [timestamp] [event]
 2. [timestamp] [event]
@@ -271,6 +283,13 @@ Affected Service: [website/service name]
 
 ═══ SUSPICIOUS IPs ═══
 [IP] - [count] requests - Spam Score: [level]
+(hoặc: "Không phân tích được - thiếu quyền đọc access log")
+
+═══ BLOCKERS ═══
+(Liệt kê các vấn đề ngăn điều tra đầy đủ)
+- Access log: Permission denied /home/*/logs/
+- Sar: sysstat not installed
+- Fix: sudo setfacl -R -m u:mcp-reader:rx /home/*/logs/
 
 ═══ RECOMMENDED ACTIONS ═══
 1. [Immediate] ...
