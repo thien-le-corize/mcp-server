@@ -220,12 +220,47 @@ cp .claude/commands/*.md ~/.claude/commands/
 | Layer | Protection |
 |-------|-----------|
 | SSH Key | Force-command: key chỉ chạy được `/opt/tt-mcp/tt-mcp` |
+| IP Whitelist | (tuỳ chọn) Chỉ cho SSH từ IP máy bạn |
 | User | `mcp-reader`: không có shell login, chỉ đọc log |
 | ACL | Chỉ `mcp-reader` được traverse `/home/*/`, đọc `/home/*/logs/` |
 | Sudoers | Chỉ cho phép: `nginx -T`, `pm2`, `journalctl`, `dmesg`, `find` |
 | Binary | Chỉ chạy read-only commands, không có shell exec tùy ý |
 
 **Không thể:** delete file, modify config, restart service, chạy shell tùy ý.
+
+### IP Whitelist (khuyên dùng)
+
+Giới hạn chỉ IP máy bạn mới SSH được:
+
+```bash
+# Khi setup, truyền IP của bạn:
+sudo ./setup.sh 113.160.x.x
+
+# Nhiều IP (nhà + công ty):
+sudo ./setup.sh 113.160.x.x,14.232.x.x
+
+# Dải IP:
+sudo ./setup.sh 113.160.0.0/16,14.232.0.0/16
+```
+
+Kết quả trong `authorized_keys`:
+```
+from="113.160.x.x,14.232.x.x",command="/opt/tt-mcp/tt-mcp",no-port-forwarding,no-pty ssh-ed25519 AAAA...
+```
+
+→ Dù lộ key, chỉ SSH từ IP bạn mới vào được.
+
+**Nếu đổi mạng (IP thay đổi):** Sửa file trên server:
+```bash
+sudo nano /opt/tt-mcp/.ssh/authorized_keys
+# Sửa from="IP_MỚI,IP_CŨ"
+```
+
+**Không dùng IP whitelist** (mặc định):
+```bash
+sudo ./setup.sh
+```
+→ Vẫn an toàn nhờ force-command, chỉ kém hơn 1 lớp bảo vệ.
 
 ## Permissions (Nếu log đọc không được)
 

@@ -1,10 +1,12 @@
 #!/bin/bash
 # TT-MCP: One-command setup
 # Copy thư mục này lên server, chạy: sudo ./setup.sh
+# Giới hạn IP (tuỳ chọn): sudo ./setup.sh 1.2.3.4,5.6.7.8
 set -e
 
 MCP_DIR="/opt/tt-mcp"
 MCP_USER="mcp-reader"
+ALLOWED_IPS="${1:-}"  # IP whitelist, phân cách bằng dấu phẩy
 
 echo "=== [1/5] Cài Go (nếu chưa có) ==="
 if ! command -v go &>/dev/null; then
@@ -80,7 +82,13 @@ mkdir -p $MCP_DIR/.ssh
 if [ ! -f $MCP_DIR/.ssh/tt-mcp-key ]; then
   ssh-keygen -t ed25519 -f $MCP_DIR/.ssh/tt-mcp-key -N "" -C "tt-mcp" -q
   PUBKEY=$(cat $MCP_DIR/.ssh/tt-mcp-key.pub)
-  echo "command=\"$MCP_DIR/tt-mcp\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $PUBKEY" > $MCP_DIR/.ssh/authorized_keys
+  if [ -n "$ALLOWED_IPS" ]; then
+    echo "from=\"$ALLOWED_IPS\",command=\"$MCP_DIR/tt-mcp\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $PUBKEY" > $MCP_DIR/.ssh/authorized_keys
+    echo "IP whitelist: $ALLOWED_IPS"
+  else
+    echo "command=\"$MCP_DIR/tt-mcp\",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty $PUBKEY" > $MCP_DIR/.ssh/authorized_keys
+    echo "No IP whitelist (mọi IP đều kết nối được)"
+  fi
   chmod 700 $MCP_DIR/.ssh
   chmod 600 $MCP_DIR/.ssh/authorized_keys $MCP_DIR/.ssh/tt-mcp-key
   chown -R $MCP_USER:$MCP_USER $MCP_DIR/.ssh
