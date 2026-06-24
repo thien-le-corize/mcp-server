@@ -1,0 +1,9 @@
+{
+  "nginx_error_log": "/var/log/nginx/error.log",
+  "nginx_access_log": "/var/log/nginx/access.log",
+  "log_base_path": "/home",
+  "allowed_log_paths": [
+    "/var/log/",
+    "/home/"
+  ]
+}
