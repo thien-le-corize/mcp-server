@@ -191,9 +191,9 @@ func buildTimeRegex(date, startH, startM, endH, endM string) string {
 func logGlob(suffix string) string {
 	base := config.LogBasePath
 	if suffix == "" {
-		return base + "/*/logs/nginx/access.log"
+		return base + "/*.log"
 	}
-	return base + "/*/logs/nginx/access.log-" + suffix
+	return base + "/*" + suffix + "*.log"
 }
 
 func timeGrep(date, startH, startM, endH, endM, logSuffix string) string {
