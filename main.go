@@ -151,7 +151,7 @@ var tools = []Tool{
 	{"get_pm2_restarts", "Show PM2 processes with restart counts and uptime to detect OOM crashes", schemaEmpty()},
 	{"get_dmesg_oom", "Get kernel OOM killer messages from dmesg", schema(P{"lines": "number"}, nil)},
 	// Journal
-	{"get_journal", "Get systemd journal logs for a unit", schema(P{"unit": "string", "lines": "number", "since": "string"}, []string{"unit"})},
+	{"get_journal", "Get systemd journal logs (optionally filter by unit, time range, grep pattern)", schema(P{"unit": "string", "since": "string", "until": "string", "grep": "string", "lines": "number"}, nil)},
 	// Generic log
 	{"get_app_log", "Read log file (restricted to allowed paths)", schema(P{"path": "string", "lines": "number"}, []string{"path"})},
 	// Incident
@@ -429,12 +429,22 @@ func handleTool(name string, params json.RawMessage) any {
 	// === Journal ===
 	case "get_journal":
 		unit := getParam(params, "unit", "")
-		if unit == "" {
-			return toolError("unit is required")
+		since := getParam(params, "since", "")
+		until := getParam(params, "until", "")
+		grepPat := getParam(params, "grep", "")
+		args := []string{"--no-pager", "-n", lines}
+		if unit != "" {
+			args = append(args, "-u", unit)
 		}
-		args := []string{"-u", unit, "-n", lines, "--no-pager"}
-		if since := getParam(params, "since", ""); since != "" {
+		if since != "" {
 			args = append(args, "--since", since)
+		}
+		if until != "" {
+			args = append(args, "--until", until)
+		}
+		if grepPat != "" {
+			cmd := "journalctl " + strings.Join(args, " ") + " | grep -Ei '" + grepPat + "'"
+			return toolResult(shell(cmd))
 		}
 		return toolResult(run("journalctl", args...))
 
