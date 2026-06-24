@@ -31,7 +31,8 @@ cp tt-mcp $MCP_DIR/
 chmod +x $MCP_DIR/tt-mcp
 
 echo "=== [4/5] Tạo user read-only ==="
-id $MCP_USER &>/dev/null || useradd -r -s /usr/sbin/nologin -d $MCP_DIR $MCP_USER
+id $MCP_USER &>/dev/null || useradd -r -s /bin/bash -d $MCP_DIR $MCP_USER
+usermod -s /bin/bash $MCP_USER
 usermod -aG adm $MCP_USER 2>/dev/null || true
 usermod -aG systemd-journal $MCP_USER 2>/dev/null || true
 usermod -aG docker $MCP_USER 2>/dev/null || true
