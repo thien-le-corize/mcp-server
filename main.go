@@ -91,10 +91,20 @@ func detectFile(paths []string) string {
 			return p
 		}
 	}
+	// Try nginx -T
+	out, _ := exec.Command("bash", "-c", `nginx -T 2>/dev/null | awk '/access_log/ {print $2; exit}'`).Output()
+	if s := strings.TrimSpace(string(out)); s != "" && s != "off" {
+		return s
+	}
 	return paths[len(paths)-1]
 }
 
 func detectDir(paths []string) string {
+	// Try nginx -T first to find log directory
+	out, _ := exec.Command("bash", "-c", `nginx -T 2>/dev/null | awk '/access_log/ {print $2}' | head -1 | xargs dirname 2>/dev/null`).Output()
+	if s := strings.TrimSpace(string(out)); s != "" && s != "." {
+		return s
+	}
 	for _, p := range paths {
 		if info, err := os.Stat(p); err == nil && info.IsDir() {
 			return p
@@ -331,8 +341,8 @@ func handleTool(name string, params json.RawMessage) any {
 	case "discover_logs":
 		p := getParam(params, "path", "")
 		var b strings.Builder
-		b.WriteString("=== NGINX CONFIG ===\n")
-		b.WriteString(shell(`nginx -T 2>/dev/null | grep -i "access_log\|error_log" | head -20`))
+		b.WriteString("=== NGINX LOG PATHS ===\n")
+		b.WriteString(shell(`nginx -T 2>/dev/null | awk '/server_name/ {domain=$2} /access_log/ {print domain " => ACCESS: " $2} /error_log/ {print domain " => ERROR : " $2}'`))
 		b.WriteString("\n=== LOG DIRECTORIES ===\n")
 		dirs := []string{"/www/wwwlogs", "/var/log/nginx", "/home/*/logs/nginx", "/var/log"}
 		if p != "" {
