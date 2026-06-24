@@ -1,4 +1,4 @@
-# TT-MCP
+# CORIZE-MCP
 
 Read-only MCP server for incident investigation. Pure Go, zero dependencies, ~5MB RAM.
 
@@ -211,7 +211,7 @@ cp .claude/commands/*.md ~/.claude/commands/
 
 ```
 /investigate dùng mcp corize, web bị down 15:40-15:50 ngày 23/6/2026
-/check-server trên ttmkt
+/check-server trên mcp corize
 /grep-requests top IP 15:40-15:51 ngày 23/6 trên corize
 ```
 
