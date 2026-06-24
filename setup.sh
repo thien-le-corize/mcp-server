@@ -42,7 +42,11 @@ chown -R $MCP_USER:$MCP_USER $MCP_DIR
 
 # Grant read access to common log directories
 for dir in /www/wwwlogs /var/log/nginx /home/*/logs /usr/local/nginx/logs; do
-  [ -d "$dir" ] && setfacl -R -m u:$MCP_USER:rx "$dir" 2>/dev/null || chmod -R o+r "$dir" 2>/dev/null || true
+  if [ -d "$dir" ]; then
+    setfacl -R -m u:$MCP_USER:rx "$dir" 2>/dev/null || chmod -R o+r "$dir" 2>/dev/null || true
+    # Ensure future log files are also readable
+    setfacl -R -d -m u:$MCP_USER:rx "$dir" 2>/dev/null || true
+  fi
 done
 
 # Allow mcp-reader to run nginx -T and pm2 via sudo (read-only commands)

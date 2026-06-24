@@ -253,13 +253,11 @@ func buildTimeRegex(date, startH, startM, endH, endM string) string {
 
 func logGlob(suffix string) string {
 	base := config.LogBasePath
-	// Try to find actual log files dynamically
 	if suffix == "" {
-		// Current logs - try common patterns
 		patterns := []string{
+			base + "/*/logs/nginx/access.log",
 			base + "/*.log",
 			base + "/*access*",
-			"/home/*/logs/nginx/access.log",
 			"/var/log/nginx/access.log",
 		}
 		for _, p := range patterns {
@@ -268,13 +266,12 @@ func logGlob(suffix string) string {
 				return p
 			}
 		}
-		return base + "/*.log"
+		return base + "/*/logs/nginx/access.log"
 	}
-	// Dated logs - try patterns with suffix
 	patterns := []string{
+		base + "/*/logs/nginx/access.log-" + suffix,
 		base + "/*" + suffix + "*",
-		"/home/*/logs/nginx/access.log-" + suffix,
-		base + "/*.log-" + suffix,
+		"/var/log/nginx/access.log-" + suffix,
 	}
 	for _, p := range patterns {
 		out, _ := exec.Command("bash", "-c", fmt.Sprintf("ls %s 2>/dev/null | head -1", p)).Output()
@@ -282,7 +279,7 @@ func logGlob(suffix string) string {
 			return p
 		}
 	}
-	return base + "/*" + suffix + "*"
+	return base + "/*/logs/nginx/access.log-" + suffix
 }
 
 func timeGrep(date, startH, startM, endH, endM, logSuffix string) string {
