@@ -77,7 +77,7 @@ Match User $MCP_USER
     X11Forwarding no
     PermitTunnel no
 EOF
-  systemctl reload sshd
+  systemctl reload sshd 2>/dev/null || systemctl reload ssh 2>/dev/null || true
 fi
 
 # Test
