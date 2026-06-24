@@ -45,6 +45,7 @@ type Config struct {
 	NginxAccessLog string   `json:"nginx_access_log"`
 	LogBasePath    string   `json:"log_base_path"`
 	AllowedPaths   []string `json:"allowed_log_paths"`
+	Path           string   `json:"path"`
 }
 
 var config Config
@@ -66,8 +67,17 @@ func loadConfig() {
 	json.Unmarshal(data, &config)
 }
 
+func envPath() []string {
+	if config.Path != "" {
+		return append(os.Environ(), "PATH="+config.Path)
+	}
+	return os.Environ()
+}
+
 func run(name string, args ...string) string {
-	out, err := exec.Command(name, args...).CombinedOutput()
+	cmd := exec.Command(name, args...)
+	cmd.Env = envPath()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return fmt.Sprintf("error: %s\n%s", err, string(out))
 	}
@@ -75,7 +85,9 @@ func run(name string, args ...string) string {
 }
 
 func shell(cmd string) string {
-	out, err := exec.Command("bash", "-c", cmd).CombinedOutput()
+	c := exec.Command("bash", "-c", cmd)
+	c.Env = envPath()
+	out, err := c.CombinedOutput()
 	if err != nil {
 		return fmt.Sprintf("error: %s\n%s", err, string(out))
 	}

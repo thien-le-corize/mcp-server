@@ -81,14 +81,5 @@ echo "  chmod 600 ~/.ssh/tt-mcp-$(hostname -s)"
 echo ""
 echo "Claude Code config:"
 echo ""
-cat << EOF
-{
-  "mcpServers": {
-    "$(hostname -s)": {
-      "command": "ssh",
-      "args": ["-i", "~/.ssh/tt-mcp-$(hostname -s)", "-o", "StrictHostKeyChecking=accept-new", "$MCP_USER@$SERVER_IP"]
-    }
-  }
-}
-EOF
+echo "  claude mcp add -s user $(hostname -s) -- ssh -T -i ~/.ssh/tt-mcp-$(hostname -s) -o StrictHostKeyChecking=accept-new $MCP_USER@$SERVER_IP"
 echo ""
