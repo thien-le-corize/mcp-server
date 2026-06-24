@@ -2,9 +2,9 @@
 
 ## MCP Server
 
-Server `ttmkt` (180.93.1.23) được kết nối qua MCP. Khi điều tra server:
+Server `corize` được kết nối qua MCP. Khi điều tra server:
 
-- LUÔN dùng MCP tool từ `ttmkt` - KHÔNG BAO GIỜ đọc file local
+- LUÔN dùng MCP tool từ `corize` - KHÔNG BAO GIỜ đọc file local
 - KHÔNG BAO GIỜ hỏi user chọn A/B/C - tự chạy tool và trả kết quả
 - Nếu tool lỗi, thử tool khác, KHÔNG hỏi user
 
